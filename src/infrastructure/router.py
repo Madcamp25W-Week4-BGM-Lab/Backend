@@ -17,7 +17,7 @@ async def get_task_status(task_id: str):
 
 # --- WORKER ENDPOINTS (GPU Server calls these) ---
 
-@router.get("/queue/pop", response_model=LLMTask)
+@router.post("/queue/pop", response_model=LLMTask)
 async def pop_task():
     """Worker asks: 'Any work for me?'"""
     task = await task_queue.pop_pending_task()
