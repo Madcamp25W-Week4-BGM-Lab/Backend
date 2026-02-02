@@ -8,10 +8,9 @@ from src.readme.services import (
     select_template,
 )
 
-router = APIRouter(prefix="/api/readme", tags=["readme"])
+router = APIRouter()
 
-
-@router.post("/generate", response_model=ReadmeGenerateResponse)
+@router.post("/generate-readme", response_model=ReadmeGenerateResponse)
 async def generate_readme_endpoint(payload: ReadmeGenerateRequest) -> ReadmeGenerateResponse:
     """
     Generate README content based on a validated Fact JSON.
