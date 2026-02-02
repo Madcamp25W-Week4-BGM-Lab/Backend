@@ -1,6 +1,7 @@
 import uuid
 import time
-from src.commit.schemas import CommitRequest
+from typing import Optional
+from src.commit.schemas import CommitRequest, CommitPollResponse
 from src.infrastructure.queue import task_queue
 from src.infrastructure.schemas import LLMTask, TaskStatus
 
@@ -27,4 +28,15 @@ async def queue_commit_generation(request: CommitRequest) -> str:
     await task_queue.add_task(task)
     return task.id
     
-    
+async def get_commit_status(task_id: str) -> Optional[CommitPollResponse]:
+    # fetch generic task
+    task = await task_queue.get_task(task_id)
+    if not task:
+        return None
+
+    # unpack into Domain Schema 
+    return CommitPollResponse(
+        task_id=task.id,
+        status=task.status.value,  # Convert Enum to string
+        commit_message=task.result # Map 'result' -> 'commit_message'
+    )
