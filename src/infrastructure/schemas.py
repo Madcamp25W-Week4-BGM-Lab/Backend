@@ -12,6 +12,7 @@ class LLMTask(BaseModel):
     id: str
     domain: str          # e.g. "commit", "readme"
     status: TaskStatus
-    prompt: str          # The raw text for the GPU
+    system_instruction: Optional[str] = None
+    user_message: str          # The raw text for the GPU
     result: Optional[str] = None
     created_at: float
