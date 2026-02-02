@@ -1,3 +1,6 @@
+import json
+import time
+import uuid
 from typing import Tuple
 
 from src.readme.schemas import (
@@ -6,6 +9,8 @@ from src.readme.schemas import (
     FrontendRuntime,
     BackendRuntime,
 )
+from src.infrastructure.queue import task_queue
+from src.infrastructure.schemas import LLMTask, TaskStatus
 
 
 # Allowed repository types to prevent unexpected or invalid values.
@@ -73,6 +78,21 @@ TEMPLATE_GENERAL_V1 = """# {name}
 - Start: {script_start}
 """
 
+TEMPLATE_EXTENSION_V1 = """# {name}
+
+## Overview
+{overview}
+
+## Runtime
+- Frontend: {frontend_summary}
+- Backend: {backend_summary}
+
+## Scripts
+- Dev: {script_dev}
+- Build: {script_build}
+- Start: {script_start}
+"""
+
 
 def validate_fact(fact: FactJson) -> None:
     """
@@ -103,6 +123,8 @@ def select_template(doc_target: DocTarget) -> Tuple[str, str]:
         return "readme_developer_v1", TEMPLATE_DEVELOPER_V1
     if doc_target == DocTarget.designer:
         return "readme_designer_v1", TEMPLATE_DESIGNER_V1
+    if doc_target == DocTarget.extension:
+        return "readme_extension_v1", TEMPLATE_EXTENSION_V1
     return "readme_general_v1", TEMPLATE_GENERAL_V1
 
 
@@ -209,3 +231,33 @@ def generate_readme(fact: FactJson, doc_target: DocTarget) -> Tuple[str, str]:
 
     content = mock_llm_generate(rendered)
     return content, template_name
+
+
+async def create_readme_task(fact: FactJson, doc_target: DocTarget, mode: str) -> str:
+    """
+    Create an LLMTask for README generation and enqueue it.
+    Returns the task_id for polling.
+    """
+    template_name, template = select_template(doc_target)
+
+    payload = {
+        "fact": fact.model_dump(),
+        "mode": mode,
+        "doc_target": doc_target.value,
+        "template": template_name,
+        "template_body": template,
+    }
+
+    task_id = str(uuid.uuid4())
+    task = LLMTask(
+        id=task_id,
+        domain="readme",
+        status=TaskStatus.PENDING,
+        system_instruction="Generate README content strictly from the provided Fact JSON and template.",
+        user_message=json.dumps(payload),
+        result=None,
+        created_at=time.time(),
+    )
+
+    await task_queue.add_task(task)
+    return task_id

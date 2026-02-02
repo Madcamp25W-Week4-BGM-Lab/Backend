@@ -6,13 +6,14 @@ from pydantic import BaseModel, Field
 
 class Mode(str, Enum):
     draft = "draft"
-    apply = "apply"
+    final = "final"
 
 
 class DocTarget(str, Enum):
     developer = "developer"
     designer = "designer"
     general = "general"
+    extension = "extension"
 
 
 class RepositoryInfo(BaseModel):
@@ -69,11 +70,15 @@ class ReadmeGenerateRequest(BaseModel):
     fact: FactJson
     mode: Mode
     doc_target: DocTarget
+    async_mode: bool = Field(False, alias="async")
 
     model_config = {"extra": "forbid"}
 
 
 class ReadmeGenerateResponse(BaseModel):
-    content: str
+    content: Optional[str] = None
+    task_id: Optional[str] = None
     template: str
     fallback: bool
+
+    model_config = {"extra": "forbid"}
