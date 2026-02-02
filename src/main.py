@@ -12,7 +12,18 @@ app.include_router(commit_router, prefix="/api/v1", tags=["Commit"])
 # Mount Infrastructure Router
 app.include_router(infrastructure_router, tags=["Infrastructure"])
 
+from src.readme.router import router as readme_router
 
-@app.get("/health")
-def health():
-    return {"status": "ok"}
+app = FastAPI()
+
+@app.get("/", tags=["health"])
+def root():
+    return {
+        "service": "subtext-backend",
+        "status": "ok",
+        "docs": "/docs",
+        "readme_api": "/api/readme/generate",
+    }
+
+# README generation API
+app.include_router(readme_router)
