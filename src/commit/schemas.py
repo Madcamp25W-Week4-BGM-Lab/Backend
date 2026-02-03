@@ -2,9 +2,11 @@ from pydantic import BaseModel
 from typing import List, Optional
 
 class CommitStyle(BaseModel):
-    convention: str
-    useEmojis: bool
-    language: str
+    convention: str                     # conventional, angular, gitmoji
+    language: str                       # en, kr, ...
+    casing: str = "lower"               # lower, higher
+    max_length: int = 50                # any commit length
+    ticket_prefix: Optional[str] = None # AUTH, PROJ, ... 
 
 class SubTextConfig(BaseModel):
     project_descriptions: str 

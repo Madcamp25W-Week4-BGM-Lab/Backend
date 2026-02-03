@@ -7,27 +7,36 @@ from src.infrastructure.schemas import LLMTask, TaskStatus
 
 async def queue_commit_generation(request: CommitRequest) -> str:
     # Build Prompt -- two parts (system_text, user_text)
-    # Convention Logic (gitmoji, conventional, angular)
+    # --- 1. Convention Logic ---
     convention_instruction = ""
     if request.config.style.convention == "gitmoji":
         convention_instruction = "Start the message with a Gitmoji (e.g., ✨ for features, 🐛 for bugs)."
-    if request.config.style.convention in ["conventional", "angular"]:
+    elif request.config.style.convention in ["conventional", "angular"]:
         convention_instruction = (
             "Format: <type>(<scope>): <subject>\n"
             "Types: feat, fix, docs, style, refactor, test, chore.\n"
-            "CRITICAL: If generating multiple lines, EVERY line must strictly follow this format." # <--- ADD THIS
+            "CRITICAL: If generating multiple lines, EVERY line must strictly follow this format."
         )
 
-    # Language Logic
+    # --- 2. Casing Logic ---
+    casing_instruction = "Start the subject with a lowercase letter (e.g., 'fix: update')."
+    if request.config.style.casing == "sentence":
+        casing_instruction = "Start the subject with a Capital letter (e.g., 'Fix: Update')."
+    
+    # --- 3. Ticket Prefix Logic ---
+    ticket_instruction = ""
+    if request.config.style.ticket_prefix:
+        prefix = request.config.style.ticket_prefix
+        ticket_instruction = (
+            f"- TICKET MATCHING: The user uses the ticket prefix '{prefix}'.\n"
+            f"  Search the context or diff for an ID starting with '{prefix}-' (e.g. {prefix}-123).\n"
+            f"  If found, APPEND it to the end of the subject in parentheses. Format: '<subject> ({prefix}-123)'."
+        )
+
+    # --- 4. Language Logic ---
     lang_instruction = ""
     if request.config.style.language != "en":
-        lang_instruction = f"Output the commit message strictly in {request.config.style.language}."
-
-    # Emoji Logic
-    emoji_instruction = f"{request.config.style.useEmojis}"
-    if request.config.style.useEmojis and request.config.style.convention != "gitmoji":
-        # Explicitly tell the model WHERE to put the emoji to avoid format conflicts
-        emoji_instruction += " (If true, place the emoji at the start of the <subject> part, AFTER the colon)"
+        lang_instruction = f"- Output the commit message strictly in {request.config.style.language}."
 
     # ==> System Prompt
     system_text = (
@@ -38,14 +47,16 @@ async def queue_commit_generation(request: CommitRequest) -> str:
         "1. Lines starting with `-` (minus) are DELETIONS. They strictly represent code that was REMOVED or REPLACED.\n"
         "2. Lines starting with `+` (plus) are ADDITIONS. They strictly represent NEW code.\n"
         "3. NEVER hallucinate features. If a line is removed (`-`), do not say it was added.\n"
-        "4. Do NOT output markdown code blocks (```). Output ONLY the raw commit message.\n\n"
+        "4. If the diff is empty or nonsensical, reply with 'Unable to detect changes'.\n"
+        "5. Do NOT output markdown code blocks (```). Output ONLY the raw commit message.\n\n"
         
         "### FORMATTING:\n"
         f"- Convention: {convention_instruction}\n"
-        f"- Use Emojis: {emoji_instruction}\n"
-        f"- Language: {lang_instruction}\n"
+        f"- Casing: {casing_instruction}\n"
+        f"- Max Length: {request.config.style.max_length} characters.\n"
+        f"{ticket_instruction}\n"
+        f"{lang_instruction}\n"
         "- Use IMPERATIVE mood (e.g., 'Fix bug', not 'Fixed bug').\n"
-        "- Keep the subject line under 50 characters."
     )
 
     if request.config.rules:

@@ -58,228 +58,211 @@ def run_test_scenario(name, payload):
             print(f"\n❌ Polling error: {e}")
             break
 
-# Define Test Scenarios
+# Common configs
+BASE_STYLE = {"convention": "conventional", "language": "en", "casing": "lower", "max_length": 50}
+CONFIG_AUTH = {"project_descriptions": "Auth System", "style": BASE_STYLE, "rules": []}
+
 scenarios = [
+    # --- BASICS ---
     {
-        "name": "1. Standard Fix (Conventional, No Emojis)",
+        "name": "Simple Fix (Python)",
         "payload": {
-            "diff": """diff --git a/src/main.py b/src/main.py
-index 8a3b1c..9d2f4e 100644
---- a/src/main.py
-+++ b/src/main.py
-@@ -10,4 +10,4 @@ def calculate_total(price, tax):
--    return price + price * tax
-+    return price + (price * tax)""",
-            "history": [],
+            "diff": "diff --git a/main.py b/main.py\n- x = 1\n+ x = 2",
+            "history": [], "config": CONFIG_AUTH
+        }
+    },
+    {
+        "name": "New Feature (JS)",
+        "payload": {
+            "diff": "diff --git a/utils.js b/utils.js\nnew file mode 100644\n+ function add(a, b) { return a + b; }",
+            "history": [], "config": CONFIG_AUTH
+        }
+    },
+    {
+        "name": "Documentation Update",
+        "payload": {
+            "diff": "diff --git a/README.md b/README.md\n- # Old Title\n+ # New Title",
+            "history": [], "config": CONFIG_AUTH
+        }
+    },
+    {
+        "name": "Style Change (CSS)",
+        "payload": {
+            "diff": "diff --git a/style.css b/style.css\n- color: red;\n+ color: blue;",
+            "history": [], "config": CONFIG_AUTH
+        }
+    },
+    {
+        "name": "Refactor (Variable Rename)",
+        "payload": {
+            "diff": "diff --git a/api.py b/api.py\n- def process(data):\n+ def process_request(payload):",
+            "history": [], "config": CONFIG_AUTH
+        }
+    },
+    
+    # --- CONVENTIONS & STYLES ---
+    {
+        "name": "Angular Convention",
+        "payload": {
+            "diff": "diff --git a/src/core.ts b/src/core.ts\n- const MAX_RETRIES = 3;\n+ const MAX_RETRIES = 5;",
+            "history": [], 
+            "config": {**CONFIG_AUTH, "style": {**BASE_STYLE, "convention": "angular"}}
+        }
+    },
+    {
+        "name": "Sentence Casing",
+        "payload": {
+            "diff": "diff --git a/config.yaml b/config.yaml\n- debug: true\n+ debug: false",
+            "history": [], 
+            "config": {**CONFIG_AUTH, "style": {**BASE_STYLE, "casing": "sentence"}}
+        }
+    },
+    {
+        "name": "Gitmoji Style",
+        "payload": {
+            "diff": "diff --git a/ui.jsx b/ui.jsx\n- <Button />\n+ <Button variant='primary' />",
+            "history": [], 
+            "config": {**CONFIG_AUTH, "style": {**BASE_STYLE, "convention": "gitmoji"}}
+        }
+    },
+    
+    # --- TICKETS & RULES ---
+    {
+        "name": "Ticket ID (Append)",
+        "payload": {
+            "diff": "diff --git a/login.py b/login.py\n# Fixes AUTH-123 login error\n- if not user:\n+ if user is None:",
+            "history": [], 
             "config": {
-                "project_descriptions": "A standard e-commerce backend.",
-                "style": {
-                    "convention": "conventional",
-                    "useEmojis": False,
-                    "language": "en"
-                },
-                "rules": []
+                "project_descriptions": "Auth", 
+                "style": {**BASE_STYLE, "ticket_prefix": "AUTH"}, "rules": []
             }
         }
     },
     {
-        "name": "2. Feature Add (Gitmoji + Custom Rule)",
+        "name": "Security High Priority",
         "payload": {
-            "diff": """diff --git a/src/auth.py b/src/auth.py
-new file mode 100644
-index 000000..e69de29
---- /dev/null
-+++ b/src/auth.py
-@@ -0,0 +1,5 @@
-+def login(user, password):
-+    # Todo: Implement actual hashing
-+    if user == "admin" and password == "1234":
-+        return True
-+    return False""",
-            "history": [],
+            "diff": "diff --git a/secrets.py b/secrets.py\n- key = '12345'\n+ key = os.getenv('KEY')",
+            "history": [], 
             "config": {
-                "project_descriptions": "Authentication module for the app.",
-                "style": {
-                    "convention": "gitmoji",
-                    "useEmojis": True,
-                    "language": "en"
-                },
-                "rules": [
-                    "Mention that this is a temporary mock implementation.",
-                    "Include the ticket ID #AUTH-001"
-                ]
+                "project_descriptions": "Security", 
+                "style": BASE_STYLE, 
+                "rules": ["Start with 'SECURITY:'"]
             }
         }
     },
+
+    # --- LANGUAGES ---
     {
-        "name": "3. Docs Update (Korean Language)",
+        "name": "Korean Output",
         "payload": {
-            "diff": """diff --git a/README.md b/README.md
-index 5f2a1b..2c3d4e 100644
---- a/README.md
-+++ b/README.md
-@@ -1,3 +1,3 @@
- # SubText
--An AI tool for commits.
-+An AI tool for automatic commit message generation and README creation.
-""",
-            "history": [],
-            "config": {
-                "project_descriptions": "Documentation for SubText project.",
-                "style": {
-                    "convention": "conventional",
-                    "useEmojis": False,
-                    "language": "ko"
-                },
-                "rules": [
-                    "Use a polite tone (honorifics).",
-                    "Summarize the change briefly."
-                ]
-            }
+            "diff": "diff --git a/msg.txt b/msg.txt\n- Hello\n+ Annyeong",
+            "history": [], 
+            "config": {**CONFIG_AUTH, "style": {**BASE_STYLE, "language": "ko"}}
         }
     },
     {
-        "name": "4. Security Fix (Angular Style + Strict Rules)",
+        "name": "Japanese Output",
         "payload": {
-            "diff": """diff --git a/src/config.py b/src/config.py
-index 112233..445566 100644
---- a/src/config.py
-+++ b/src/config.py
-@@ -5,2 +5,2 @@ class Settings:
--    SECRET_KEY = "unsafe-hardcoded-key"
-+    SECRET_KEY = os.getenv("SECRET_KEY")""",
-            "history": [],
-            "config": {
-                "project_descriptions": "Configuration management.",
-                "style": {
-                    "convention": "angular",
-                    "useEmojis": True,
-                    "language": "en"
-                },
-                "rules": [
-                    "Start the subject with 'SECURITY:'",
-                    "Do not mention specific variable names in the subject."
-                ]
-            }
+            "diff": "diff --git a/msg.txt b/msg.txt\n- Hello\n+ Konnichiwa",
+            "history": [], 
+            "config": {**CONFIG_AUTH, "style": {**BASE_STYLE, "language": "ja"}}
+        }
+    },
+
+    # --- COMPLEXITY ---
+    {
+        "name": "Mixed Concerns (Split)",
+        "payload": {
+            "diff": "diff --git a/ui.css b/ui.css\n- padding: 10px;\n+ padding: 20px;\ndiff --git a/db.py b/db.py\n- query()\n+ secure_query()",
+            "history": [], "config": CONFIG_AUTH
         }
     },
     {
-        "name": "5. 🚩 Mixed Concerns (Faulty Commit)",
-        "description": "Changes UI colors AND fixes a critical DB bug. AI should struggle or summarize both.",
+        "name": "Dependency Update (Chore)",
         "payload": {
-            "diff": """diff --git a/src/styles/main.css b/src/styles/main.css
-index 1a2b3c..4d5e6f 100644
---- a/src/styles/main.css
-+++ b/src/styles/main.css
-@@ -20,1 +20,1 @@ header {
--    background-color: #333;
-+    background-color: #ff0000; /* Rebranding to Red */
- }
-diff --git a/src/backend/db.py b/src/backend/db.py
-index 998877..665544 100644
---- a/src/backend/db.py
-+++ b/src/backend/db.py
-@@ -50,4 +50,4 @@ def get_user(id):
--    query = f"SELECT * FROM users WHERE id = {id}" # VULNERABLE!
-+    query = "SELECT * FROM users WHERE id = %s"    # Fixed SQL Injection""",
-            "history": [],
-            "config": {
-                "project_descriptions": "Legacy web app refactoring.",
-                "style": {"convention": "conventional", "useEmojis": False, "language": "en"},
-                "rules": []
-            }
+            "diff": "diff --git a/package.json b/package.json\n- \"react\": \"16.0.0\"\n+ \"react\": \"18.0.0\"",
+            "history": [], "config": CONFIG_AUTH
         }
     },
     {
-        "name": "6. 🏴‍☠️ Pirate Mode (Weird Rule)",
-        "description": "Forces the AI to speak like a pirate.",
+        "name": "Breaking Change (!)",
         "payload": {
-            "diff": """diff --git a/src/map.js b/src/map.js
-index 111..222 100644
---- a/src/map.js
-+++ b/src/map.js
-@@ -10,1 +10,1 @@
-- const treasureLocation = null;
-+ const treasureLocation = { x: 42, y: 99 };""",
-            "history": [],
-            "config": {
-                "project_descriptions": "Treasure hunt app.",
-                "style": {"convention": "conventional", "useEmojis": True, "language": "en"},
-                "rules": [
-                    "Write the commit message in Pirate English.",
-                    "Start every message with 'ARRR!'",
-                    "Use nautical terms."
-                ]
-            }
+            "diff": "diff --git a/api.go b/api.go\n- func Get(id int)\n+ func Get(id string) // BREAKING CHANGE",
+            "history": [], "config": CONFIG_AUTH
         }
     },
     {
-        "name": "7. 🌸 Haiku Style (Weird Format)",
-        "description": "Forces a 5-7-5 syllable structure.",
+        "name": "Revert Commit",
         "payload": {
-            "diff": """diff --git a/app.py b/app.py
-index abc..def 100644
---- a/app.py
-+++ b/app.py
-@@ -1,1 +1,1 @@
--print("Hello World")
-+print("Goodbye World")""",
-            "history": [],
-            "config": {
-                "project_descriptions": "A simple python script.",
-                "style": {"convention": "conventional", "useEmojis": False, "language": "en"},
-                "rules": [
-                    "Ignore standard conventions.",
-                    "Write the commit message strictly as a Haiku (5-7-5 syllables).",
-                    "Do not use the word 'update'."
-                ]
-            }
+            "diff": "diff --git a/app.js b/app.js\n- console.log('debug')\n+ // reverted debug log",
+            "history": [], 
+            "config": {**CONFIG_AUTH, "rules": ["Mark as Revert"]}
         }
     },
     {
-        "name": "8. 🤖 JSON Output (Machine Readable)",
-        "description": "Forces the output to be raw JSON.",
+        "name": "Test Update",
         "payload": {
-            "diff": """diff --git a/package.json b/package.json
-index 111..222 100644
---- a/package.json
-+++ b/package.json
-@@ -15,1 +15,1 @@
--    "version": "1.0.0"
-+    "version": "1.0.1"
-""",
-            "history": [],
-            "config": {
-                "project_descriptions": "NPM package.",
-                "style": {"convention": "conventional", "useEmojis": False, "language": "en"},
-                "rules": [
-                    "Output ONLY valid JSON.",
-                    "Format: {\"type\": \"...\", \"scope\": \"...\", \"subject\": \"...\"}"
-                ]
-            }
+            "diff": "diff --git a/tests/test_login.py b/tests/test_login.py\n- assert True\n+ assert login() == True",
+            "history": [], "config": CONFIG_AUTH
         }
     },
     {
-        "name": "9. ↩️ Revert Commit",
-        "description": "Tests logic for reverting changes.",
+        "name": "CI Config",
         "payload": {
-            "diff": """diff --git a/src/broken.js b/src/broken.js
-index 555..444 100644
---- a/src/broken.js
-+++ b/src/broken.js
-@@ -1,5 +1,1 @@
--function broken() {
--  throw new Error("Oops");
--}
-+function working() {
-+  return true;
-+}""",
-            "history": [],
-            "config": {
-                "project_descriptions": "NodeJS backend.",
-                "style": {"convention": "angular", "useEmojis": True, "language": "en"},
-                "rules": ["If this is a revert, explicitly state what is being brought back."]
-            }
+            "diff": "diff --git a/.github/workflows/main.yml b/.github/workflows/main.yml\n- runs-on: ubuntu-latest\n+ runs-on: ubuntu-22.04",
+            "history": [], "config": CONFIG_AUTH
+        }
+    },
+    {
+        "name": "Delete File",
+        "payload": {
+            "diff": "diff --git a/old_script.sh b/old_script.sh\ndeleted file mode 100644",
+            "history": [], "config": CONFIG_AUTH
+        }
+    },
+    {
+        "name": "Rename File",
+        "payload": {
+            "diff": "diff --git a/img.png b/assets/img.png\nrename from img.png\nrename to assets/img.png",
+            "history": [], "config": CONFIG_AUTH
+        }
+    },
+
+    # --- EDGE CASES ---
+    {
+        "name": "Max Length Constraint",
+        "payload": {
+            "diff": "diff --git a/long_filename_that_is_very_long.txt b/long.txt\n- content\n+ slightly different content with much meaning",
+            "history": [], 
+            "config": {**CONFIG_AUTH, "style": {**BASE_STYLE, "max_length": 30}}
+        }
+    },
+    {
+        "name": "Typos Fix",
+        "payload": {
+            "diff": "diff --git a/docs.md b/docs.md\n- Teh end\n+ The end",
+            "history": [], "config": CONFIG_AUTH
+        }
+    },
+    {
+        "name": "Empty Diff (Trap)",
+        "payload": {
+            "diff": "",
+            "history": [], "config": CONFIG_AUTH
+        }
+    },
+    {
+        "name": "Garbage Diff (Trap)",
+        "payload": {
+            "diff": "afj2309fj 2039fj",
+            "history": [], "config": CONFIG_AUTH
+        }
+    },
+    {
+        "name": "Multiple Fixes One File",
+        "payload": {
+            "diff": "diff --git a/app.py b/app.py\n- x=1 # bug1\n+ x=2\n- y=1 # bug2\n+ y=2",
+            "history": [], "config": CONFIG_AUTH
         }
     }
 ]
