@@ -4,11 +4,13 @@ import sys
 
 # Configuration
 API_URL = "http://127.0.0.1:80/api/v1"
-POLL_INTERVAL = 2  # Seconds between checks
+POLL_INTERVAL = 0.5  # Seconds between checks
 
 def run_test_scenario(name, payload):
     print(f"\n--- [Scenario: {name}] Sending Request ---")
     
+    start_time = time.perf_counter()
+
     # 1. Send the Generation Request
     try:
         response = requests.post(f"{API_URL}/generate-commit", json=payload)
@@ -34,7 +36,10 @@ def run_test_scenario(name, payload):
             status = task_data.get("status")
 
             if status == "completed":
-                print("\n\n>>> 🤖 LLM Output:")
+                end_time = time.perf_counter() # End Timer
+                duration = end_time - start_time
+
+                print(f"\n\n>>> 🤖 LLM Output (Generated in {duration:.2f}s):")
                 print("-" * 40)
                 print(task_data.get("commit_message"))
                 print("-" * 40)
@@ -155,6 +160,125 @@ index 112233..445566 100644
                     "Start the subject with 'SECURITY:'",
                     "Do not mention specific variable names in the subject."
                 ]
+            }
+        }
+    },
+    {
+        "name": "5. 🚩 Mixed Concerns (Faulty Commit)",
+        "description": "Changes UI colors AND fixes a critical DB bug. AI should struggle or summarize both.",
+        "payload": {
+            "diff": """diff --git a/src/styles/main.css b/src/styles/main.css
+index 1a2b3c..4d5e6f 100644
+--- a/src/styles/main.css
++++ b/src/styles/main.css
+@@ -20,1 +20,1 @@ header {
+-    background-color: #333;
++    background-color: #ff0000; /* Rebranding to Red */
+ }
+diff --git a/src/backend/db.py b/src/backend/db.py
+index 998877..665544 100644
+--- a/src/backend/db.py
++++ b/src/backend/db.py
+@@ -50,4 +50,4 @@ def get_user(id):
+-    query = f"SELECT * FROM users WHERE id = {id}" # VULNERABLE!
++    query = "SELECT * FROM users WHERE id = %s"    # Fixed SQL Injection""",
+            "history": [],
+            "config": {
+                "project_descriptions": "Legacy web app refactoring.",
+                "style": {"convention": "conventional", "useEmojis": False, "language": "en"},
+                "rules": []
+            }
+        }
+    },
+    {
+        "name": "6. 🏴‍☠️ Pirate Mode (Weird Rule)",
+        "description": "Forces the AI to speak like a pirate.",
+        "payload": {
+            "diff": """diff --git a/src/map.js b/src/map.js
+index 111..222 100644
+--- a/src/map.js
++++ b/src/map.js
+@@ -10,1 +10,1 @@
+- const treasureLocation = null;
++ const treasureLocation = { x: 42, y: 99 };""",
+            "history": [],
+            "config": {
+                "project_descriptions": "Treasure hunt app.",
+                "style": {"convention": "conventional", "useEmojis": True, "language": "en"},
+                "rules": [
+                    "Write the commit message in Pirate English.",
+                    "Start every message with 'ARRR!'",
+                    "Use nautical terms."
+                ]
+            }
+        }
+    },
+    {
+        "name": "7. 🌸 Haiku Style (Weird Format)",
+        "description": "Forces a 5-7-5 syllable structure.",
+        "payload": {
+            "diff": """diff --git a/app.py b/app.py
+index abc..def 100644
+--- a/app.py
++++ b/app.py
+@@ -1,1 +1,1 @@
+-print("Hello World")
++print("Goodbye World")""",
+            "history": [],
+            "config": {
+                "project_descriptions": "A simple python script.",
+                "style": {"convention": "conventional", "useEmojis": False, "language": "en"},
+                "rules": [
+                    "Ignore standard conventions.",
+                    "Write the commit message strictly as a Haiku (5-7-5 syllables).",
+                    "Do not use the word 'update'."
+                ]
+            }
+        }
+    },
+    {
+        "name": "8. 🤖 JSON Output (Machine Readable)",
+        "description": "Forces the output to be raw JSON.",
+        "payload": {
+            "diff": """diff --git a/package.json b/package.json
+index 111..222 100644
+--- a/package.json
++++ b/package.json
+@@ -15,1 +15,1 @@
+-    "version": "1.0.0"
++    "version": "1.0.1"
+""",
+            "history": [],
+            "config": {
+                "project_descriptions": "NPM package.",
+                "style": {"convention": "conventional", "useEmojis": False, "language": "en"},
+                "rules": [
+                    "Output ONLY valid JSON.",
+                    "Format: {\"type\": \"...\", \"scope\": \"...\", \"subject\": \"...\"}"
+                ]
+            }
+        }
+    },
+    {
+        "name": "9. ↩️ Revert Commit",
+        "description": "Tests logic for reverting changes.",
+        "payload": {
+            "diff": """diff --git a/src/broken.js b/src/broken.js
+index 555..444 100644
+--- a/src/broken.js
++++ b/src/broken.js
+@@ -1,5 +1,1 @@
+-function broken() {
+-  throw new Error("Oops");
+-}
++function working() {
++  return true;
++}""",
+            "history": [],
+            "config": {
+                "project_descriptions": "NodeJS backend.",
+                "style": {"convention": "angular", "useEmojis": True, "language": "en"},
+                "rules": ["If this is a revert, explicitly state what is being brought back."]
             }
         }
     }
