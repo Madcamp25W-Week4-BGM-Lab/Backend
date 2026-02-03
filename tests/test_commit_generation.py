@@ -6,6 +6,25 @@ import sys
 API_URL = "http://127.0.0.1:80/api/v1"
 POLL_INTERVAL = 0.5  # Seconds between checks
 
+import subprocess
+
+def get_git_diff(commit_ref="HEAD"):
+    """
+    Fetches the diff for a specific commit (default: HEAD).
+    """
+    try:
+        # 'git show' with --format="" hides the author/date headers, returning only the diff.
+        # --unified=3 gives standard context.
+        result = subprocess.check_output(
+            ["git", "show", "--format=", "--unified=3", commit_ref],
+            stderr=subprocess.STDOUT,
+            text=True
+        )
+        return result.strip()
+    except subprocess.CalledProcessError as e:
+        print(f"❌ Git Error: {e.output}")
+        return None
+
 def run_test_scenario(name, payload):
     print(f"\n--- [Scenario: {name}] Sending Request ---")
     
@@ -63,6 +82,24 @@ BASE_STYLE = {"convention": "conventional", "language": "en", "casing": "lower",
 CONFIG_AUTH = {"project_descriptions": "Auth System", "style": BASE_STYLE, "rules": []}
 
 scenarios = [
+    {
+        "name": "REAL GIT COMMIT (Last Commit)",
+        "payload": {
+            # 1. Get the diff dynamically from your local git repo
+            "diff": get_git_diff("c8722d575f0e8b90a00a4189d1ff35b4bb3aba59"), 
+            
+            "history": [],
+            "config": {
+                "project_descriptions": "My actual project",
+                "style": {
+                    "convention": "conventional",
+                    "language": "en",
+                    "max_length": 50
+                },
+                "rules": []
+            }
+        }
+    },
     # --- BASICS ---
     {
         "name": "Simple Fix (Python)",
