@@ -1,16 +1,17 @@
 from fastapi import APIRouter, HTTPException
 
-from src.readme.schemas import ReadmeGenerateRequest, ReadmeGenerateResponse
+from src.readme.schemas import ReadmeGenerateRequest, ReadmeGenerateResponse, ReadmePollResponse
 from src.readme.services import (
     validate_fact,
     generate_readme,
     create_readme_task,
     select_template,
+    get_readme_status
 )
 
 router = APIRouter()
 
-@router.post("/generate-readme", response_model=ReadmeGenerateResponse)
+@router.post("/", response_model=ReadmeGenerateResponse)
 async def generate_readme_endpoint(payload: ReadmeGenerateRequest) -> ReadmeGenerateResponse:
     """
     Generate README content based on a validated Fact JSON.
@@ -42,3 +43,13 @@ async def generate_readme_endpoint(payload: ReadmeGenerateRequest) -> ReadmeGene
         template=template_name,
         fallback=False,
     )
+
+@router.get("/{task_id}", response_model=ReadmePollResponse)
+async def get_readme_result(task_id: str):
+    """
+    Client polls this endpoint to check if the README is ready.
+    """
+    response = await get_readme_status(task_id)
+    if not response:
+        raise HTTPException(status_code=404, detail="Task not found")
+    return response

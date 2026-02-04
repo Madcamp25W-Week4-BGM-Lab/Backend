@@ -1,13 +1,14 @@
 import json
 import time
 import uuid
-from typing import Tuple
+from typing import Tuple, Optional
 
 from src.readme.schemas import (
     FactJson,
     DocTarget,
     FrontendRuntime,
     BackendRuntime,
+    ReadmePollResponse
 )
 from src.infrastructure.queue import task_queue
 from src.infrastructure.schemas import LLMTask, TaskStatus
@@ -261,3 +262,20 @@ async def create_readme_task(fact: FactJson, doc_target: DocTarget, mode: str) -
 
     await task_queue.add_task(task)
     return task_id
+
+async def get_readme_status(task_id: str) -> Optional[ReadmePollResponse]:
+    """
+    Fetch task from queue and format as ReadmePollResponse.
+    """
+
+    # Fetch generic task from infrastructure 
+    task = await task_queue.get_task(task_id)
+    if not task:
+        return None
+    
+    # Map generic task to Domain Scheme
+    return ReadmePollResponse(
+        task_id=task.id,
+        status=task.status.value,
+        content=task.result
+    )
