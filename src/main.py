@@ -8,8 +8,8 @@ from src.infrastructure.router import router as infrastructure_router
 app = FastAPI(title="SubText Backend")
 
 # Mount Domain Routers (Prefix /api/v1)
-app.include_router(commit_router, prefix="/api/v1", tags=["Commit"])
-app.include_router(readme_router, prefix="/api/v1", tags=["ReadMe"])
+app.include_router(commit_router, prefix="/api/v1/commits", tags=["Commit"])
+app.include_router(readme_router, prefix="/api/v1/readmes", tags=["ReadMe"])
 
 # Mount Infrastructure Router
 app.include_router(infrastructure_router, tags=["Infrastructure"])

@@ -11,7 +11,7 @@ from src.readme.services import (
 
 router = APIRouter()
 
-@router.post("/generate-readme", response_model=ReadmeGenerateResponse)
+@router.post("/", response_model=ReadmeGenerateResponse)
 async def generate_readme_endpoint(payload: ReadmeGenerateRequest) -> ReadmeGenerateResponse:
     """
     Generate README content based on a validated Fact JSON.
@@ -44,7 +44,7 @@ async def generate_readme_endpoint(payload: ReadmeGenerateRequest) -> ReadmeGene
         fallback=False,
     )
 
-@router.get("/tasks/{task_id}", response_model=ReadmePollResponse)
+@router.get("/{task_id}", response_model=ReadmePollResponse)
 async def get_readme_result(task_id: str):
     """
     Client polls this endpoint to check if the README is ready.
