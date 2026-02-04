@@ -6,7 +6,8 @@ from src.readme.services import (
     generate_readme,
     create_readme_task,
     select_template,
-    get_readme_status
+    get_readme_status,
+    select_readme_system_prompt,
 )
 
 router = APIRouter()
@@ -18,6 +19,7 @@ async def generate_readme_endpoint(payload: ReadmeGenerateRequest) -> ReadmeGene
     """
     try:
         validate_fact(payload.fact)
+        select_readme_system_prompt(payload.fact.repository.type)
     except ValueError as exc:
         # Validation errors must return 400.
         raise HTTPException(status_code=400, detail=str(exc)) from exc
@@ -35,7 +37,10 @@ async def generate_readme_endpoint(payload: ReadmeGenerateRequest) -> ReadmeGene
             fallback=False,
         )
 
-    content, template_name = generate_readme(payload.fact, payload.doc_target)
+    content, template_name = generate_readme(
+        payload.fact,
+        payload.doc_target,
+    )
 
     # Fallback is always false for now; keep the field for future failover.
     return ReadmeGenerateResponse(

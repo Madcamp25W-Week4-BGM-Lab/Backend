@@ -14,20 +14,69 @@ from src.infrastructure.queue import task_queue
 from src.infrastructure.schemas import LLMTask, TaskStatus
 
 
-# Allowed repository types to prevent unexpected or invalid values.
 ALLOWED_REPOSITORY_TYPES = {
-    "web",
-    "backend",
-    "frontend",
-    "mobile",
-    "cli",
+    "research",
     "library",
-    "desktop",
     "service",
-    "api",
-    "tool",
 }
 
+README_SYSTEM_PROMPT_RESEARCH = """You are generating a README for a research or experimental repository.
+
+Audience:
+- Researchers or engineers familiar with the domain.
+
+Rules:
+- Prioritize clarity of experiment structure over friendliness.
+- Avoid marketing language.
+- Do not oversimplify results.
+- Internal implementation details are allowed if they aid reproducibility.
+
+Required sections (in order):
+1. Background & Motivation
+2. Research Question / Hypothesis
+3. Method / Model Overview
+4. Experiment Setup
+5. Results
+6. Reproducibility
+"""
+
+# System prompt for library repositories.
+README_SYSTEM_PROMPT_LIBRARY = """You are generating a README for a library or framework.
+
+Audience:
+- Developers who want to quickly evaluate and use the library.
+
+Rules:
+- Be concise and practical.
+- Minimize internal architecture explanations.
+- Focus on usage and API.
+
+Required sections (in order):
+1. What is this?
+2. Installation
+3. Quick Start
+4. API Overview
+5. Configuration / Options
+"""
+
+# System prompt for service repositories.
+README_SYSTEM_PROMPT_SERVICE = """You are generating a README for a product or service repository.
+
+Audience:
+- Users evaluating whether this service solves their problem.
+
+Rules:
+- Explain the problem before the solution.
+- Focus on usage flow, not internal details.
+- Avoid deep implementation discussion.
+
+Required sections (in order):
+1. Problem
+2. What This Service Does
+3. Usage Flow
+4. Example Outcome
+5. Limitations
+"""
 
 # Fixed README templates; content must not deviate from these structures.
 TEMPLATE_DEVELOPER_V1 = """# {name}
@@ -107,7 +156,7 @@ def validate_fact(fact: FactJson) -> None:
     else:
         if not fact.repository.name or not fact.repository.name.strip():
             errors.append("repository.name is required")
-        if not fact.repository.type or not fact.repository.type.strip():
+        if not fact.repository.type or not str(fact.repository.type).strip():
             errors.append("repository.type is required")
         if fact.repository.type not in ALLOWED_REPOSITORY_TYPES:
             errors.append(
@@ -116,6 +165,16 @@ def validate_fact(fact: FactJson) -> None:
 
     if errors:
         raise ValueError("; ".join(errors))
+
+
+def select_readme_system_prompt(repo_type: str) -> str:
+    if repo_type == "research":
+        return README_SYSTEM_PROMPT_RESEARCH
+    if repo_type == "library":
+        return README_SYSTEM_PROMPT_LIBRARY
+    if repo_type == "service":
+        return README_SYSTEM_PROMPT_SERVICE
+    raise ValueError(f"Unsupported repository.type: {repo_type}")
 
 
 def select_template(doc_target: DocTarget) -> Tuple[str, str]:
@@ -194,11 +253,15 @@ def _format_scripts(fact: FactJson) -> Tuple[str, str, str]:
     return dev, build, start
 
 
-def generate_readme(fact: FactJson, doc_target: DocTarget) -> Tuple[str, str]:
+def generate_readme(
+    fact: FactJson,
+    doc_target: DocTarget,
+) -> Tuple[str, str]:
     """
     Deterministically create a README from Fact JSON and a fixed template.
     Returns (content, template_name).
     """
+    select_readme_system_prompt(fact.repository.type)
     template_name, template = select_template(doc_target)
 
     overview = f'Repository "{fact.repository.name}" is a "{fact.repository.type}" project.'
@@ -234,11 +297,16 @@ def generate_readme(fact: FactJson, doc_target: DocTarget) -> Tuple[str, str]:
     return content, template_name
 
 
-async def create_readme_task(fact: FactJson, doc_target: DocTarget, mode: str) -> str:
+async def create_readme_task(
+    fact: FactJson,
+    doc_target: DocTarget,
+    mode: str,
+) -> str:
     """
     Create an LLMTask for README generation and enqueue it.
     Returns the task_id for polling.
     """
+    system_prompt = select_readme_system_prompt(fact.repository.type)
     template_name, template = select_template(doc_target)
 
     payload = {
@@ -254,7 +322,7 @@ async def create_readme_task(fact: FactJson, doc_target: DocTarget, mode: str) -
         id=task_id,
         domain="readme",
         status=TaskStatus.PENDING,
-        system_instruction="Generate README content strictly from the provided Fact JSON and template.",
+        system_instruction=system_prompt,
         user_message=json.dumps(payload),
         result=None,
         created_at=time.time(),
