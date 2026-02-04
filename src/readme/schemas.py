@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Optional
+from typing import Optional, Literal
 
 from pydantic import BaseModel, Field
 
@@ -18,8 +18,8 @@ class DocTarget(str, Enum):
 
 class RepositoryInfo(BaseModel):
     # Required repository metadata
-    name: str = Field(..., min_length=1)
-    type: str = Field(..., min_length=1)
+    name: Optional[str] = None
+    type: Literal["research", "library", "service"]
 
     model_config = {"extra": "forbid"}
 
