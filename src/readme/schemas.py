@@ -82,3 +82,9 @@ class ReadmeGenerateResponse(BaseModel):
     fallback: bool
 
     model_config = {"extra": "forbid"}
+
+class ReadmePollResponse(BaseModel):
+    task_id: str
+    status: str
+    content: Optional[str] = None
+    error: Optional[str] = None
