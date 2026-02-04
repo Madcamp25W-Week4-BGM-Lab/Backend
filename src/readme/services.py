@@ -1,7 +1,7 @@
 import json
 import time
 import uuid
-from typing import Tuple
+from typing import Tuple, Optional
 
 from src.readme.schemas import (
     FactJson,
