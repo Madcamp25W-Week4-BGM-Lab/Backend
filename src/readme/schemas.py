@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Optional, Literal
+from typing import Optional, Literal, List
 
 from pydantic import BaseModel, Field
 
@@ -19,7 +19,8 @@ class DocTarget(str, Enum):
 class RepositoryInfo(BaseModel):
     # Required repository metadata
     name: Optional[str] = None
-    type: Literal["research", "library", "service"]
+    short_description: Optional[str] = None
+    repo_type: Literal["research", "library", "service"]
 
     model_config = {"extra": "forbid"}
 
@@ -58,8 +59,28 @@ class ScriptsInfo(BaseModel):
     model_config = {"extra": "forbid"}
 
 
+class AnalysisContext(BaseModel):
+    primary_focus: Optional[str] = None
+    intended_audience: Optional[str] = None
+    problem_domain: Optional[str] = None
+
+    model_config = {"extra": "forbid"}
+
+
+class RepositoryFacts(BaseModel):
+    keywords: Optional[List[str]] = None
+    has_ml_code: Optional[bool] = None
+    has_api_server: Optional[bool] = None
+    has_sdk_exports: Optional[bool] = None
+    has_cli: Optional[bool] = None
+
+    model_config = {"extra": "forbid"}
+
+
 class FactJson(BaseModel):
     repository: RepositoryInfo
+    analysis_context: Optional[AnalysisContext] = None
+    facts: Optional[RepositoryFacts] = None
     runtime: Optional[RuntimeInfo] = None
     scripts: Optional[ScriptsInfo] = None
 

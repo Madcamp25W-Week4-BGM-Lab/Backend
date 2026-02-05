@@ -20,62 +20,188 @@ ALLOWED_REPOSITORY_TYPES = {
     "service",
 }
 
-README_SYSTEM_PROMPT_RESEARCH = """You are generating a README for a research or experimental repository.
+COMMON_SYSTEM_INSTRUCTION = """You are part of a deterministic README generation system.
 
-Audience:
-- Researchers or engineers familiar with the domain.
+You must follow ALL rules below:
 
-Rules:
-- Prioritize clarity of experiment structure over friendliness.
-- Avoid marketing language.
-- Do not oversimplify results.
-- Internal implementation details are allowed if they aid reproducibility.
+- The repository type is already determined. Do NOT question or reinterpret it.
+- The README structure is FIXED. Do NOT add, remove, or reorder sections.
+- A Mermaid diagram is already inserted by the backend.
+- You must NOT generate Mermaid code.
+- You must NOT describe Mermaid syntax.
+- You must write content ONLY for the provided sections.
+- Do NOT include implementation details, file paths, or code snippets.
+- Write concise, high-level documentation for first-time readers.
 
-Required sections (in order):
-1. Background & Motivation
-2. Research Question / Hypothesis
-3. Method / Model Overview
-4. Experiment Setup
-5. Results
-6. Reproducibility
+If any required information is missing, write in an abstract and general manner.
+"""
+
+OUTPUT_FORMAT_RULES = """Output format rules:
+
+- Output MUST be valid Markdown.
+- Use "##" level headings ONLY.
+- Section titles MUST exactly match the predefined section names.
+- Sections MUST appear in the defined order.
+- Each section must contain at least 1 paragraph.
+- Do NOT include code blocks.
+- Do NOT include Mermaid diagrams.
+- Do NOT include TODOs or placeholders.
+
+If information is missing:
+- Write abstract, general content.
+- Do NOT state that information is missing.
+"""
+
+README_SYSTEM_PROMPT_RESEARCH = """Repository type: research
+
+This repository represents a research or experimental project.
+
+Your role is to WRITE CONTENT for a predefined README template.
+You are NOT designing the structure.
+
+Primary goals of this README:
+- Explain what research problem is being explored
+- Clarify the experimental setup at a high level
+- Communicate what is evaluated and learned
+
+You MUST follow this exact section order:
+
+1. Project Overview
+2. Research Goal
+3. Experiment Pipeline
+4. Methodology
+5. Evaluation
+6. Key Findings
+
+Section-specific guidance:
+
+- Project Overview:
+  Provide a concise summary of the research topic and context.
+
+- Research Goal:
+  Clearly state the research question or hypothesis.
+
+- Experiment Pipeline:
+  Explain the overall experimental flow conceptually.
+  Refer to the existing diagram as a high-level representation only.
+
+- Methodology:
+  Describe the approach in abstract terms (data, model, process).
+  Avoid implementation or algorithmic detail.
+
+- Evaluation:
+  Explain what is measured and how results are assessed.
+
+- Key Findings:
+  Summarize insights or conclusions without numeric results.
+
+Tone:
+- Academic but readable
+- Abstract and intention-focused
+- No procedural instructions
 """
 
 # System prompt for library repositories.
-README_SYSTEM_PROMPT_LIBRARY = """You are generating a README for a library or framework.
+README_SYSTEM_PROMPT_LIBRARY = """Repository type: library
 
-Audience:
-- Developers who want to quickly evaluate and use the library.
+This repository represents a reusable software library.
 
-Rules:
-- Be concise and practical.
-- Minimize internal architecture explanations.
-- Focus on usage and API.
+Your role is to WRITE CONTENT for a predefined README template.
+You are NOT designing the structure.
 
-Required sections (in order):
-1. What is this?
+Primary goals of this README:
+- Explain what problem the library solves
+- Show how users conceptually interact with it
+- Clarify where it fits within a larger system
+
+You MUST follow this exact section order:
+
+1. Library Overview
 2. Installation
-3. Quick Start
-4. API Overview
-5. Configuration / Options
+3. Basic Usage
+4. Integration Flow
+5. API Design
+6. Use Cases
+7. Limitations
+
+Section-specific guidance:
+
+- Library Overview:
+  Describe the purpose and scope of the library.
+
+- Installation:
+  Explain installation at a conceptual level (no commands).
+
+- Basic Usage:
+  Describe a typical usage flow without code.
+
+- Integration Flow:
+  Explain how the library integrates with external systems.
+  Refer to the diagram as a usage-level flow.
+
+- API Design:
+  Describe the design philosophy and responsibility boundaries.
+  Do NOT list functions or methods.
+
+- Use Cases:
+  Provide examples of when the library is useful.
+
+- Limitations:
+  Clearly state known constraints or non-goals.
+
+Tone:
+- Developer-facing
+- Practical but high-level
+- Usage-oriented, not internal
 """
 
 # System prompt for service repositories.
-README_SYSTEM_PROMPT_SERVICE = """You are generating a README for a product or service repository.
+README_SYSTEM_PROMPT_SERVICE = """Repository type: service
 
-Audience:
-- Users evaluating whether this service solves their problem.
+This repository represents a service or application system.
 
-Rules:
-- Explain the problem before the solution.
-- Focus on usage flow, not internal details.
-- Avoid deep implementation discussion.
+Your role is to WRITE CONTENT for a predefined README template.
+You are NOT designing the structure.
 
-Required sections (in order):
-1. Problem
-2. What This Service Does
-3. Usage Flow
-4. Example Outcome
-5. Limitations
+Primary goals of this README:
+- Explain what the service does
+- Describe the system architecture
+- Clarify component responsibilities and interactions
+
+You MUST follow this exact section order:
+
+1. Service Overview
+2. System Architecture
+3. Core Components
+4. Request Flow
+5. Deployment Context
+6. Operational Notes
+
+Section-specific guidance:
+
+- Service Overview:
+  Summarize the service from a user or business perspective.
+
+- System Architecture:
+  Describe the high-level structure and major components.
+  Refer to the diagram as a system overview.
+
+- Core Components:
+  Explain the roles and responsibilities of key components.
+
+- Request Flow:
+  Describe how a typical request moves through the system.
+
+- Deployment Context:
+  Explain the intended runtime context abstractly.
+
+- Operational Notes:
+  Mention constraints, assumptions, or extension points.
+
+Tone:
+- Architectural and explanatory
+- Oriented toward new contributors
+- No environment-specific steps
 """
 
 # Fixed README templates; content must not deviate from these structures.
@@ -156,11 +282,11 @@ def validate_fact(fact: FactJson) -> None:
     else:
         if not fact.repository.name or not fact.repository.name.strip():
             errors.append("repository.name is required")
-        if not fact.repository.type or not str(fact.repository.type).strip():
-            errors.append("repository.type is required")
-        if fact.repository.type not in ALLOWED_REPOSITORY_TYPES:
+        if not fact.repository.repo_type or not str(fact.repository.repo_type).strip():
+            errors.append("repository.repo_type is required")
+        if fact.repository.repo_type not in ALLOWED_REPOSITORY_TYPES:
             errors.append(
-                f"repository.type must be one of {sorted(ALLOWED_REPOSITORY_TYPES)}"
+                f"repository.repo_type must be one of {sorted(ALLOWED_REPOSITORY_TYPES)}"
             )
 
     if errors:
@@ -174,7 +300,32 @@ def select_readme_system_prompt(repo_type: str) -> str:
         return README_SYSTEM_PROMPT_LIBRARY
     if repo_type == "service":
         return README_SYSTEM_PROMPT_SERVICE
-    raise ValueError(f"Unsupported repository.type: {repo_type}")
+    raise ValueError(f"Unsupported repository.repo_type: {repo_type}")
+
+
+def build_system_prompt(repo_type: str) -> str:
+    return "\n\n".join(
+        [
+            COMMON_SYSTEM_INSTRUCTION.strip(),
+            OUTPUT_FORMAT_RULES.strip(),
+            select_readme_system_prompt(repo_type).strip(),
+        ]
+    )
+
+
+def build_user_message(fact: FactJson) -> str:
+    payload = {
+        "repository": {
+            "name": fact.repository.name,
+            "short_description": fact.repository.short_description,
+            "repo_type": fact.repository.repo_type,
+        },
+        "analysis_context": (
+            None if fact.analysis_context is None else fact.analysis_context.model_dump()
+        ),
+        "facts": None if fact.facts is None else fact.facts.model_dump(),
+    }
+    return json.dumps(payload)
 
 
 def select_template(doc_target: DocTarget) -> Tuple[str, str]:
@@ -261,10 +412,10 @@ def generate_readme(
     Deterministically create a README from Fact JSON and a fixed template.
     Returns (content, template_name).
     """
-    select_readme_system_prompt(fact.repository.type)
+    select_readme_system_prompt(fact.repository.repo_type)
     template_name, template = select_template(doc_target)
 
-    overview = f'Repository "{fact.repository.name}" is a "{fact.repository.type}" project.'
+    overview = f'Repository "{fact.repository.name}" is a "{fact.repository.repo_type}" project.'
 
     # Runtime formatting with explicit null vs missing handling.
     runtime_present = fact.runtime is not None
@@ -284,7 +435,7 @@ def generate_readme(
 
     rendered = template.format(
         name=fact.repository.name,
-        repo_type=fact.repository.type,
+        repo_type=fact.repository.repo_type,
         overview=overview,
         frontend_summary=frontend_summary,
         backend_summary=backend_summary,
@@ -306,16 +457,10 @@ async def create_readme_task(
     Create an LLMTask for README generation and enqueue it.
     Returns the task_id for polling.
     """
-    system_prompt = select_readme_system_prompt(fact.repository.type)
+    system_prompt = build_system_prompt(fact.repository.repo_type)
     template_name, template = select_template(doc_target)
 
-    payload = {
-        "fact": fact.model_dump(),
-        "mode": mode,
-        "doc_target": doc_target.value,
-        "template": template_name,
-        "template_body": template,
-    }
+    user_message = build_user_message(fact)
 
     task_id = str(uuid.uuid4())
     task = LLMTask(
@@ -323,7 +468,7 @@ async def create_readme_task(
         domain="readme",
         status=TaskStatus.PENDING,
         system_instruction=system_prompt,
-        user_message=json.dumps(payload),
+        user_message=user_message,
         result=None,
         created_at=time.time(),
     )
