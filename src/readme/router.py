@@ -4,7 +4,7 @@ from src.readme.schemas import ReadmeGenerateRequest, ReadmeGenerateResponse, Re
 from src.readme.services import (
     validate_fact,
     generate_readme,
-    create_readme_task,
+    create_intent_task,
     select_template,
     get_readme_status,
     select_readme_system_prompt,
@@ -25,11 +25,7 @@ async def generate_readme_endpoint(payload: ReadmeGenerateRequest) -> ReadmeGene
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     if payload.async_mode:
-        task_id = await create_readme_task(
-            payload.fact,
-            payload.doc_target,
-            payload.mode.value,
-        )
+        task_id = await create_intent_task(payload.fact)
         template_name, _ = select_template(payload.doc_target)
         return ReadmeGenerateResponse(
             task_id=task_id,

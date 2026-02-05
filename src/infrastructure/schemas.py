@@ -11,6 +11,7 @@ class TaskStatus(str, Enum):
 class LLMTask(BaseModel):
     id: str
     domain: str          # e.g. "commit", "readme"
+    task_type: Optional[str] = None
     status: TaskStatus
     system_instruction: Optional[str] = None
     user_message: str          # The raw text for the GPU
